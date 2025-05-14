@@ -10,7 +10,7 @@ A Monte Carlo test particle code to simulate electron acceleration in interplane
 
 The installation instructions use [Miniconda](https://www.anaconda.com/docs/getting-started/miniconda/install) to setup the needed python environment with packages. The installation assumes you are either using Linux/MacOS terminal or Anaconda Prompt in Windows (Anaconda Prompt was installed with your Miniconda/other Anaconda installation).
 
-For more intricate instructions, [click here.](https://gitlab.utu.fi/lanjoh/easi-documentation/-/blob/main/Documentation.md). 
+For more intricate instructions, [click here](https://gitlab.utu.fi/lanjoh/easi-documentation/-/blob/main/Documentation.md). 
 
 ### Download the project
 
