@@ -85,7 +85,6 @@ def inject():
         R_min = R_min**2
         R = np.random.random(size=N_p) * (1 - R_min) + R_min
         particles[:,2] = (-u + (particles[:,1] + u) * np.sqrt(R)) / (particles[:,1])
-    
 
     # Change the frame of reference from plasma rest frame to HTF
     particles[:,1], particles[:,2] = change_frame(particles[:,1], particles[:,2], -u)
@@ -112,8 +111,6 @@ if only_ambient_mfp:
         t = "not implemented"
         
         # Set a maximum mean free path scaled with the magnetic field profile
-        # l1 = inv_L_ambient # Upstream value
-        # l2 = downstream_mfp_scaler * l1 # Downstream value
         inv_L_ambient_prof = 2 * inv_L_ambient / (mfp_prof(x, t) * (1 - downstream_mfp_scaler) + 1 + downstream_mfp_scaler)
         
         mfp_inv = inv_L_ambient_prof
@@ -143,10 +140,6 @@ else:
         gamma = eval_gamma(v)
         
         # Set a maximum mean free path scaled with the magnetic field profile
-        #l1 = inv_L_ambient # Upstream value
-        #l2 = downstream_mfp_scaler * l1 # Downstream value
-        #inv_L_ambient_prof = inv_L_ambient/(mfp_prof(x, t) + 2*l2/ (l1-l2)) # The limiting ambient mean free path to be checked against
-        #inv_L_ambient_prof = 2 /(mfp_prof(x, t) * (l1 - l2) + l1 + l2) # The limiting ambient mean free path to be checked against
         inv_L_ambient_prof = 2 * inv_L_ambient / (mfp_prof(x, t) * (1 - downstream_mfp_scaler) + 1 + downstream_mfp_scaler)
         
         # Calculate the inverse of the mean free path
