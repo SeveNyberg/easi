@@ -169,6 +169,26 @@ def eval_gamma(v):
 
 
 @jit(nopython=True)
+def eval_plasma_beta(k_boltz, T, m_p, V_A):
+    """
+    Evaluates the plasma beta based on the temperature and the Alfvën speed of the ambient medium.
+    
+    Parameters:
+        k_boltz (float): The boltzmann constant [J/K]
+        T (float): The upstream plasma temperature [K]
+        m_p (float): Proton mass [kg]
+        V_A (float): Alfvén speed in the plasma [m/s]
+    
+    Returns:
+        plasma_beta (float): The plasma beta.
+    """
+    
+    plasma_beta = 4 * k_boltz *T / (m_p * V_A ** 2)
+    
+    return plasma_beta
+
+
+@jit(nopython=True)
 def eval_rg(M_A, theta_1, beta):
     """
     Compute gas compression ratio of the shock iteratively with Newton's method. Borrowed from Alexandr Afanasiev's SOLPACS plotting code. Added functionality of if M_A = 1, rg = 1, only relevant when obliquity is also 0.

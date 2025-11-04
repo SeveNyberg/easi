@@ -124,10 +124,11 @@ def plot_espec(particles_list, parameters_list, paths, xlims = [None, None], yli
         v = particles[:,1]
         mu = particles[:,2]
         
-        # Injectiona and shock parameters
+        # Injection and shock parameters
         E_inj = p["E_inj_0"]
         M_A = p["ux1"]/(np.cos(np.deg2rad(p["theta_1"]))*p["V_A1"]) # The Alfvén Mach number in the de Hoffmann-Teller Frame (HTF)
-        rg = eval_rg(M_A, np.deg2rad(p["theta_1"]), p["beta"]) # Gas compression ratio computed from parameters
+        plasma_beta = eval_plasma_beta(p["k_boltz"], p["T"], p["m_i"], p["V_A1"] * 1000)
+        rg = eval_rg(M_A, np.deg2rad(p["theta_1"]), plasma_beta) # Gas compression ratio computed from parameters
         
         # If changing from de Hoffmann - Teller frame to the upstream plasma rest frame, solve the upstream flow speed and change particle speed and pitch angle cosine 
         if plasmarestframe:
@@ -537,14 +538,6 @@ def plot_2dhist(inthist_list, parameters_list, paths,
         ax[1].set_xlabel(r"$x$ ["+f"{div_txt}"+r"$d_i$]")
         ax[1].set_ylabel(r"$\mu$")
         fig.colorbar(plot, ax = ax[1])
-        
-        # A code block to evaluate reflected population density vs. the injected density
-        # int_xlim = [-10,-3]
-        # inj_pop = counts[mu_grid > 0] 
-        # inj_pop = np.sum(inj_pop[:,(x_grid > int_xlim[0]) & (x_grid < int_xlim[1])])
-        # ref_pop = counts[mu_grid < 0]
-        # ref_pop = np.sum(ref_pop[:,(x_grid > int_xlim[0]) & (x_grid < int_xlim[1])])
-        # print(f"Ratio of reflected population from injected population (neg. mu / pos. mu, x \in [{int_xlim[0]}, {int_xlim[1]}]):", ref_pop/inj_pop)
 
         # Solve the meshed for mu vs. p
         X,Y = np.meshgrid(mu_grid, p_grid)
@@ -644,19 +637,6 @@ def plot_2dmomhist(pinthist_list, parameters_list, paths,
         counts_para_pos = (np.sum(pinthist, axis = 2).T)[:p["p_N"]//2-1] / ((p_grid[1:]-p_grid[:-1])[:,None])/(x_edges[1:]-x_edges[:-1])
         counts_para_neg = (np.sum(pinthist, axis = 2).T)[-1:-p["p_N"]//2:-1] / ((p_grid[1:]-p_grid[:-1])[:,None])/(x_edges[1:]-x_edges[:-1])
         counts_perp_pos = (np.sum(pinthist, axis = 1).T)[:p["p_N"]//2-1] / ((p_grid[1:]-p_grid[:-1])[:,None] * p_grid[:-1,None] * 2*np.pi)/(x_edges[1:]-x_edges[:-1])
-
-        # A code block to evaluate the beam density vs. the rest of the particle population
-        # E_lim = [2e0,13e0]
-        # p_grid2 = p_grid
-        # p_grid = p_grid[:-1]
-        # int_xlim = [-10e-3,-3e-3]
-        # box_arg = (x_grid > int_xlim[0]) & (x_grid < int_xlim[1])
-        # inj_pop = (counts_para_neg[:-1]*(p_grid[1:]-p_grid[:-1])[:,None])[p_grid[:-1] < E_lim[0]]
-        # inj_pop = np.sum(inj_pop[:,box_arg]) + np.sum(counts_para_pos[:-1,box_arg]*(p_grid[1:]-p_grid[:-1])[:,None])# + np.sum(counts_perp_pos[:,box_arg])
-        # beam_pop = (counts_para_neg[:-1]*(p_grid[1:]-p_grid[:-1])[:,None])[(p_grid[:-1] > E_lim[0]) & (p_grid[:-1] < E_lim[1])]
-        # beam_pop = np.sum(beam_pop[:,box_arg])
-        # print(f"Ratio of beam integral vs. the rest (x \in [{int_xlim[0]}, {int_xlim[1]}]):", beam_pop/inj_pop)
-        # p_grid = p_grid2
 
         # Change to energy units if desired
         if units_E:
@@ -1021,18 +1001,6 @@ def plot_profiles(parameters_list, path_list, zoomin = False,
         
         print("box size:", box_size)   
         
-        # Evaluate shock properties in physical units
-        M_A = p["ux1"]/(np.cos(np.deg2rad(p["theta_1"]))*p["V_A1"]) # The Alfvén Mach number in the de Hoffmann-Teller Frame (HTF)
-        rg = eval_rg(M_A, np.deg2rad(p["theta_1"]), p["beta"]) # Gas compression ratio computed from parameters
-        rb = eval_rb(M_A, rg, np.deg2rad(p["theta_1"]))
-        theta_1 = np.deg2rad(p["theta_1"]) # Shock obliquity in radians  
-        tan_theta_1 = np.tan(theta_1)  
-        ux1 = p["ux1"]*1e3/p["c"]
-        V_A1 = p["V_A1"]*1000/p["c"] # unitless Alfvén speed
-        m_i = p["m_i"]/p["m_e"] # Unitless ion mass
-        alpha = m_i * V_A1 # With units corresponds to m_i/m_e * V_A1/c
-        a_ratio = p["a_prm"]/alpha
-        
         # Create the position axis grid and check whether zoomin is required
         x = np.linspace(x_min, x_max, 100000)
         if zoomin:
@@ -1133,9 +1101,9 @@ def plot_inj(parameters_list, paths, inj_specs = []):
             x_min = -p["up_bound_scaler"] * box_size        
             
             # Evaluate shock parameters in physical units
-            M_A = p["ux1"]/(np.cos(np.deg2rad(p["theta_1"]))*p["V_A1"]) # The Alfvén Mach number in the de Hoffmann-Teller Frame (HTF)
-            rg = eval_rg(M_A, np.deg2rad(p["theta_1"]), p["beta"]) # Gas compression ratio computed from parameters
-            rb = eval_rb(M_A, rg, np.deg2rad(p["theta_1"]))
+            # M_A = p["ux1"]/(np.cos(np.deg2rad(p["theta_1"]))*p["V_A1"]) # The Alfvén Mach number in the de Hoffmann-Teller Frame (HTF)
+            # rg = eval_rg(M_A, np.deg2rad(p["theta_1"]), p["beta"]) # Gas compression ratio computed from parameters
+            # rb = eval_rb(M_A, rg, np.deg2rad(p["theta_1"]))
             
             # Evaluate the flow speed profile in physical units
             theta_1 = np.deg2rad(p["theta_1"]) # Shock obliquity in radians  

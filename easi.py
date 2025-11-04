@@ -35,6 +35,7 @@ theta_1 = np.deg2rad(theta_1) # Shock obliquity in radians
 tan_theta_1 = np.tan(theta_1) # Tangent of shock obliquity
 ion_inert = eval_ion_inert(n_part, e, m_i, eps0, c) # ion inertial length for natural unit conversion in meters
 T_max = T_max * c / ion_inert # Unitless maximum simulation time
+plasma_beta = eval_plasma_beta(k_boltz, T, m_i, V_A1*1000) # The plasma beta
 if L_1 == "inf": # Check whether no global focusing is wished for
     inv_L_1 = 0 # Set inverse of L_1 to 0 at the limit of infinity
 else:
@@ -45,7 +46,7 @@ else:
     inv_mfp_1 = 1/(mfp_1 * 1000 / ion_inert)
 M_A = ux1/(np.cos(theta_1)*V_A1) # The Alfvén Mach number in the de Hoffmann-Teller Frame (HTF)
 V_A1 = V_A1*1000/c # unitless Alfvén speed
-rg = eval_rg(M_A, theta_1, beta) # Gas compression ratio computed from parameters
+rg = eval_rg(M_A, theta_1, plasma_beta) # Gas compression ratio computed from parameters
 m_i = m_i/m_e # Unitless ion mass
 alpha = m_i * V_A1 # With units corresponds to m_i/m_e * V_A1/c
 a_ratio = a_prm/alpha # Mean free path scaling term, alpha is solved from physics, a used as scaler
@@ -83,6 +84,11 @@ def inject():
     # Evaluate the flow profile at the edge of the box
     u, _ = eval_flow_profile(x_min_edge, particles[:,3])
     
+    if u >= 1:
+        print("Superluminal shock detected, lessen obliquity or shock speed!")
+        print("u_htf =", u,"c")
+        raise ValueError
+    
     if spec_inj:
         # Set the speeds and pitch angle cosines to all particles by sampling from the defined spectrum
         particles[:,1], particles[:,2] = spec_func(u)
@@ -119,8 +125,6 @@ if only_ambient_mfp:
         Returns:
             mfp_inv (numpy array (float)): The inverses of the mean free paths.
         """
-        
-        
         
         # Set a maximum mean free path scaled with the magnetic field profile
         inv_mfp_ambient_prof = 2 * inv_mfp_1 / (mfp_prof(x, t) * (1 - downstream_mfp_scaler) + 1 + downstream_mfp_scaler)
@@ -571,7 +575,7 @@ if histogram_frame == "plasma rest":
         xi = spatial_indices(x)
 
         # Change to plasma rest frame 
-        v_prime, mu_prime, dt_prime = change_frame_dt(v, mu, u, dt)
+        v_prime, mu_prime = change_frame(v, mu, u)
         
         # Calculate the mu index in the plasma rest frame
         mui = ((mu_prime + 1) / 2 * mu_N) # mu_min = -1, mu_max - mu_min = 2
@@ -597,7 +601,7 @@ if histogram_frame == "plasma rest":
         pperpi[within] = (np.sign(pperp[within])*(np.log10(np.abs(pperp[within])) - p_pmin) / (p_pmax - p_pmin) * p_N/2)
         pperpi[~within] = -999999
 
-        return xi, pi, mui, pparai, pperpi, dt_prime, dt_prime
+        return xi, pi, mui, pparai, pperpi, dt
     
     
 elif histogram_frame == "normal incidence":
@@ -643,7 +647,7 @@ elif histogram_frame == "normal incidence":
         pi = ((np.log10(p) - p_min) / (p_max - p_min) * p_N)  
         
         # Calculate the particle parallel and perpendicular momentum indices in plasma rest frame
-        v_prime, mu_prime, dt_prf = change_frame_dt(v, mu, u, dt)
+        v_prime, mu_prime = change_frame(v, mu, u)
         p_prime = p_func(v)
         ppara = p_prime * mu_prime
         mu_sqrt = 1 - mu_prime**2
@@ -661,7 +665,7 @@ elif histogram_frame == "normal incidence":
         pperpi[within] = (np.sign(pperp[within])*(np.log10(np.abs(pperp[within])) - p_pmin) / (p_pmax - p_pmin) * p_N/2)
         pperpi[~within] = -999999
 
-        return xi, pi, mui, pparai, pperpi, dt_prime, dt_prf
+        return xi, pi, mui, pparai, pperpi, dt
     
 
 else:
@@ -702,7 +706,7 @@ else:
         pi = ((np.log10(p) - p_min) / (p_max - p_min) * p_N)   
         
         # Calculate the particle parallel and perpendicular momentum indices in the plasma rest frame
-        v_prime, mu_prime, dt_prf = change_frame_dt(v, mu, u, dt)
+        v_prime, mu_prime = change_frame(v, mu, u)
         p_prime = p_func(v_prime) 
         ppara = p_prime * mu_prime
         mu_sqrt = 1 - mu_prime**2
@@ -720,11 +724,11 @@ else:
         pperpi[within] = (np.sign(pperp[within])*(np.log10(np.abs(pperp[within])) - p_pmin) / (p_pmax - p_pmin) * p_N/2)
         pperpi[~within] = -999999
 
-        return xi, pi, mui, pparai, pperpi, dt, dt_prf
+        return xi, pi, mui, pparai, pperpi, dt
     
 
 @jit(nopython=True)
-def integrate_particles(xi, pi, mui, pparai, pperpi, dt, dt_prf, int_hist, int_v_para_hist, int_p_hist, v, mu):
+def integrate_particles(xi, pi, mui, pparai, pperpi, dt, int_hist, int_v_para_hist, int_p_hist, v, mu):
     """
     Add the time step data to the corresponding location in the time integration matrix. Ensure that index array have been changed to integers before this function. Histograms will be altered in-place, so no returns.
     
@@ -754,7 +758,7 @@ def integrate_particles(xi, pi, mui, pparai, pperpi, dt, dt_prf, int_hist, int_v
         if xi[i] >= 0 and xi[i] <= x_N and pi[i] >= 0 and pi[i] <= p_N and mui[i] >= 0 and mui[i] <= mu_N:
             int_v_para_hist[xi[i], pi[i], mui[i]] += hist_count[i]
         if xi[i] >= 0 and xi[i] <= x_N and pparai[i] <= p_N//2 and pparai[i] >= -p_N//2 and pperpi[i] <= p_N//2 and pperpi[i] >= -p_N//2:
-            int_p_hist[xi[i], pparai[i], pperpi[i]] += dt_prf[i]
+            int_p_hist[xi[i], pparai[i], pperpi[i]] += dt[i]
 
                 
 
@@ -810,12 +814,12 @@ def simulate_particles(particles, i, t_end):
         dt1, dt2 = split_timestep(x, v, mu, dt, tan_theta)
         
         # Add the first timesteps to the integration histogram
-        xi, pi, mui, pparai, pperpi, dti, dt_prf = integration_indices(x, v, mu, u, tan_theta, dt1)     
+        xi, pi, mui, pparai, pperpi, dti = integration_indices(x, v, mu, u, tan_theta, dt1)     
               
         # Add the first timestep to the time integration histograms
         integrate_particles(xi.astype(int), pi.astype(int), mui.astype(int), 
                             pparai.astype(int), pperpi.astype(int),
-                            dti, dt_prf, int_hist, int_v_para_hist, int_p_hist, v, mu)
+                            dti, int_hist, int_v_para_hist, int_p_hist, v, mu)
         
         # Move the particles
         x = move_particles(x, v, mu, dt, tan_theta)
@@ -841,10 +845,10 @@ def simulate_particles(particles, i, t_end):
         #x[~in_loop] = move_particles(x[~in_loop], v[~in_loop], mu[~in_loop], T_max - t[~in_loop], tan_theta[~in_loop])
 
         # Add the second timesteps to the integration histogram
-        xi, pi, mui, pparai, pperpi, dti, dt_prf = integration_indices(x[in_loop], v[in_loop], mu[in_loop], u[in_loop], tan_theta[in_loop], dt2[in_loop])       
+        xi, pi, mui, pparai, pperpi, dti = integration_indices(x[in_loop], v[in_loop], mu[in_loop], u[in_loop], tan_theta[in_loop], dt2[in_loop])       
         integrate_particles(xi.astype(int), pi.astype(int), mui.astype(int), 
                             pparai.astype(int), pperpi.astype(int),
-                            dti, dt_prf, int_hist, int_v_para_hist, int_p_hist, v[in_loop], mu[in_loop])
+                            dti, int_hist, int_v_para_hist, int_p_hist, v[in_loop], mu[in_loop])
         
         # Change to the plasma rest frame of reference for scattering
         v[in_loop], mu[in_loop], dt_prime = change_frame_dt(v[in_loop], mu[in_loop], u[in_loop], dt[in_loop])
@@ -929,6 +933,7 @@ def main():
     print("box_size:", up_bound_scaler * box_size, "d_i")
     print("r_g:", rg)
     print("r_b:", rb)
+    print("plasma_beta:", plasma_beta)
 
     # Create particle array and inject particles using the function inject()
     print("Starting injection...")

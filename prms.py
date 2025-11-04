@@ -12,7 +12,7 @@ from simulation_functions import eval_E_natural, eval_box_size, eval_ion_inert, 
 #-------------------------------------
 # Switches
 #-------------------------------------
-spec_inj = False # Toggles defined custom spectral injection vs monoenergetic injection with E_inj_0
+spec_inj = True # Toggles defined custom spectral injection vs monoenergetic injection with E_inj_0
 save_injection = True # Toggles saving of injection particle data
 only_ambient_mfp = True # Toggles off the cosh profiled mean free path at the shock and instead uses only the ambient tanh profile for the mean free path
 sda_regime = False # Toggles SDA regime on, in practice sizes the simulation box to 20 d_i instead of the defined particle speed's diffusion length. Ignores up_bound_scaler and down_bound_scaler.
@@ -22,28 +22,28 @@ continuity_testing = False # Tests mass conservation of the simulation by inject
 #-------------------------------------
 # Physical constants
 #-------------------------------------
-m_e = 9.1093837015e-31 # kg, electron mass from CODATA RECOMMENDED VALUES OF THE FUNDAMENTAL PHYSICAL CONSTANTS: 2018 NIST SP 961 (May 2019)
-m_i = 1.67262192369e-27 # kg, proton mass from CODATA RECOMMENDED VALUES OF THE FUNDAMENTAL PHYSICAL CONSTANTS: 2018 NIST SP 961 (May 2019)
-c = 299792458 # m/s, speed of light from CODATA RECOMMENDED VALUES OF THE FUNDAMENTAL PHYSICAL CONSTANTS: 2018 NIST SP 961 (May 2019)
-e = 1.602176634e-19 # C, elementary charge from CODATA RECOMMENDED VALUES OF THE FUNDAMENTAL PHYSICAL CONSTANTS: 2018 NIST SP 961 (May 2019)
-eps0 = 8.8541878128e-12 # F/m, vacuum permittivity from CODATA RECOMMENDED VALUES OF THE FUNDAMENTAL PHYSICAL CONSTANTS: 2018 NIST SP 961 (May 2019)
-mu0 = 1.25663706212e-6 # H/m, vacuum permeability from CODATA RECOMMENDED VALUES OF THE FUNDAMENTAL PHYSICAL CONSTANTS: 2018 NIST SP 961 (May 2019)
-R_sun = 6.96e5 # km, T. M. Brown & J. Christensen-Dalsgaard, Astrophys. J. 500, L195 (1998) Many values for the Solar radius have been published, most of which are consistent with this result.
-AU = 1.4959e8 # km, While A is approximately equal to the semi-major axis of the Earth’s orbit, it is not exactly so. Nor is it exactly the mean Earth-Sun distance. There are a number of reasons: a) the Earth’s orbit is not exactly Keplerian due to relativity and to perturbations from other planets; b) the adopted value for the Gaussian gravitational constant k is not exactly equal to the Earth’s mean motion; and c) the mean distance in a Keplerian orbit is not equal to the semi-major axis a: r = a(1 + e^2/2), where e is the eccentricity. (Discussion courtesy of Myles Standish, JPL).
-k_boltz = 1.380649e-23 # J/K, Botlzmann constant from CODATA RECOMMENDED VALUES OF THE FUNDAMENTAL PHYSICAL CONSTANTS: 2018 NIST SP 961 (May 2019)
+m_e = 9.1093837015e-31 # [kg], electron mass from CODATA RECOMMENDED VALUES OF THE FUNDAMENTAL PHYSICAL CONSTANTS: 2018 NIST SP 961 (May 2019)
+m_i = 1.67262192369e-27 # [kg], proton mass from CODATA RECOMMENDED VALUES OF THE FUNDAMENTAL PHYSICAL CONSTANTS: 2018 NIST SP 961 (May 2019)
+c = 299792458 # [m/s], speed of light from CODATA RECOMMENDED VALUES OF THE FUNDAMENTAL PHYSICAL CONSTANTS: 2018 NIST SP 961 (May 2019)
+e = 1.602176634e-19 # [C], elementary charge from CODATA RECOMMENDED VALUES OF THE FUNDAMENTAL PHYSICAL CONSTANTS: 2018 NIST SP 961 (May 2019)
+eps0 = 8.8541878128e-12 # [F/m], vacuum permittivity from CODATA RECOMMENDED VALUES OF THE FUNDAMENTAL PHYSICAL CONSTANTS: 2018 NIST SP 961 (May 2019)
+mu0 = 1.25663706212e-6 # [H/m], vacuum permeability from CODATA RECOMMENDED VALUES OF THE FUNDAMENTAL PHYSICAL CONSTANTS: 2018 NIST SP 961 (May 2019)
+R_sun = 6.96e5 # [km], T. M. Brown & J. Christensen-Dalsgaard, Astrophys. J. 500, L195 (1998) Many values for the Solar radius have been published, most of which are consistent with this result.
+AU = 1.4959e8 # [km], While A is approximately equal to the semi-major axis of the Earth’s orbit, it is not exactly so. Nor is it exactly the mean Earth-Sun distance. There are a number of reasons: a) the Earth’s orbit is not exactly Keplerian due to relativity and to perturbations from other planets; b) the adopted value for the Gaussian gravitational constant k is not exactly equal to the Earth’s mean motion; and c) the mean distance in a Keplerian orbit is not equal to the semi-major axis a: r = a(1 + e^2/2), where e is the eccentricity. (Discussion courtesy of Myles Standish, JPL).
+k_boltz = 1.380649e-23 # [J/K], Botlzmann constant from CODATA RECOMMENDED VALUES OF THE FUNDAMENTAL PHYSICAL CONSTANTS: 2018 NIST SP 961 (May 2019)
 
 #-------------------------------------
 # Physical parameters
 #-------------------------------------
-ux1 = 1400.0 # Upstream flow velocity parameter [km/s]
-V_A1 = 150.0 # The Alfvén velocity [km/s]
-theta_1 = 87.0 # Shock obliquity parameter [deg]
-beta = 0.1 # The plasma beta
-n_part = 9e7 # 1/cm^3, particle density
-L_1 = "inf" # km, KEEP "inf" FOR NOW AS GLOBAL FOCUSING IS NOT IMPLEMENTED. Ambient focusing length for parts of simulation where focusing length is very small.
-mfp_1 = R_sun # km, Upstream ambient mean free path for parts of the simulation where the provided mean free path profiles are very small.
-T_max = 10.0 # s, The maximum time of the simulation (UNUSED, though possible to use by uncommenting lines in simulate_particles() and inject_particles().)
-E_inj_0 = 1.0 # keV, The monoenergetic injection energy of particles.
+ux1 = 1400.0 # [km/s], The upstream flow speed along the shock normal direction in the shock rest frame 
+V_A1 = 150.0 # [km/s], The upstream Alfvén speed 
+theta_1 = 70.0 # [deg], Shock obliquity
+n_part = 9e7 # [1/cm^3], particle density
+L_1 = "inf" # [km], KEEP "inf" FOR NOW AS GLOBAL FOCUSING IS NOT IMPLEMENTED. Ambient focusing length for parts of simulation where focusing length is very small.
+mfp_1 = R_sun # [km], Upstream ambient mean free path for parts of the simulation where the provided mean free path profiles are very small.
+T_max = 10.0 # [s], The maximum time of the simulation (UNUSED, though possible to use by uncommenting lines in simulate_particles() and inject_particles().)
+E_inj_0 = 1.0 # [keV], The monoenergetic injection energy of particles.
+T = 2e6 # [K], temperature for solving the plasma beta and the maxwellian injection
 
 #-------------------------------------
 # Numerical parameters
@@ -57,7 +57,7 @@ d = 1.0 # The shock thickness (measured in ion inertial lengths), tunes the obli
 k = 1.0 # Mean free path cosh-profile width scaler when only_ambient_mfp == False.
 a_prm = 1.0 # Mean free path value scaling parameter
 N_snapshots = 1 # Number of snapshots to save from the simulation (UNUSED, KEEP AT 1, SEE T_max IF WANT SNAPSHOTS ARE TO BE USED)
-E_L = E_inj_0 # keV, energy for which the box size/focusing length will be set for
+E_L = E_inj_0 # [keV], energy for which the box size/focusing length will be set for
 T_inj_scaler = 1.0 # Scaler for the injection time. Example: T_inj_scaler = 0.9 would result in the last particle being injected at 90% of the maximum time of the simulation.
 # If SDA regime is to be used, set up_bound_scaler and down_bound_scaler to values such that the box size is 20 d_i both in the upstream and the downstream along x.
 if sda_regime:
@@ -75,7 +75,6 @@ p_max_f = 1e2 # Multiplier, p_inj * p_max_f is the upper bound of p in the time 
 x_N = 100 # Amount of x cells in the intergral histogram if custom spatial bins are not used
 p_N = 150 # Amount of p cells in the time integral histogram
 mu_N = 100 # Amount of mu cells in the time integral histogram
-
 
 @jit(nopython=True)
 def spatial_bins():
@@ -123,7 +122,6 @@ def spec_func(u):
     # spec_index = 4 # The momentum power-law spectral index used for the power_law injection
     # return power_law_distr_inj(R1, u, N_p, m_e, c, e, spec_index)
     
-    T = 2e6 # K, temperature for the maxwellian distribution injection
     v, mu = maxwellian_distr_inj(u, N_p, T, k_boltz, m_e, c)
     
     return v, mu
@@ -132,7 +130,7 @@ def spec_func(u):
 #-------------------------------------
 # Physical shock profiles
 #-------------------------------------
-# The profile of the magnetic field strength
+# The profile of the magnetic field strength, take care that flow profile and magnetic field profile can form a de Hoffmann - Teller frame
 @jit(nopython=True)
 def B_prof(x,t):
     return (1 + np.tanh(x / (k * d))) / 2
@@ -140,9 +138,9 @@ def B_prof(x,t):
 # The derivative of the magnetic field strength profile
 @jit(nopython=True)
 def B_prof_der(x,t):
-    return   1 / (2 * d * np.cosh(x / (k * d))**2)
+    return  1 / (2 * d * np.cosh(x / (k * d))**2)
     
-# The flow speed profile 
+# The flow speed profile, take care that flow profile and magnetic field profile can form a de Hoffmann - Teller frame 
 @jit(nopython=True)
 def u_prof(x,t):
     return (1 + np.tanh(x/d)) / 2
